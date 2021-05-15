@@ -2,13 +2,25 @@
 const { calculateMerkelRoot, verifyMerkelRoot, getVerificationParams } = require('./merkel')
 const contract = artifacts.require("NodeOperatorsRegistry")
 const { getFromIPFS, addToIPFS } = require('./ipfs')
+const crypto = require("crypto");
 
+const MAX_BLOCK_SIZE = 100
+const PUBKEY_LENGTH = 48
+const SIGNATURE_LENGTH = 48
 
 module.exports = async function main(callback) {
   try {
+    let TOTAL = 200
     await getKeyStore()
-    await addKeys([{pubkey:'this', signature:'not'}])
-    await getKeyStore()
+    let keys = []
+    for (let i=0; i<=TOTAL; i++){
+      keys.push({
+        pubKey: crypto.randomBytes(PUBKEY_LENGTH).toString('hex'),
+        signature: crypto.randomBytes(SIGNATURE_LENGTH).toString('hex')
+      })
+    }
+    await addKeys(keys)
+    // await getKeyStore()
     callback(0);
   } catch (error) {
     console.error(error);
@@ -23,16 +35,17 @@ module.exports = async function main(callback) {
 // }
 
 
-async function addKeys(key_objects) {
+async function addKeys(keyList) {
 
   // console log
-  console.log("Adding new keys!: ", JSON.stringify(key_objects))
-  const newKeysCount = key_objects.length
+  console.log("Adding new keys!: ", JSON.stringify(keyList))
+  const newKeysCount = keyList.length
 
   // fetch required fields from the contract
   let ret_obj = await getNodeOperatorDetails()
   let ipfsHash = ret_obj['0']
   let merkelRoot = ret_obj['1']
+
   console.log('Current IPFS Hash: ', ipfsHash.toString())
   console.log('Current Merkle Root: ', merkelRoot.toString())
 
@@ -46,20 +59,16 @@ async function addKeys(key_objects) {
   }
   console.log('Current Key Store: ', keyStore)
 
-  // let is_untampered = verifyMerkelRoot(keyStore, merkelRoot)
-  // console.log('Verified : ', is_untampered)
-  //
-  // if (is_untampered === false) {
-  //   console.log('Merkel Root Verification FAILED')
-  //   console.log('EXITING!')
-  //   return
-  // }
-
-  // Update key-store with new keys
-  for (let i=0; i < key_objects.length; i++) {
-    keyStore.push(key_objects[i])
+  let prevKeys = 0
+  if (keyStore) {
+    let obj = keyStore[keyStore.length - 1]
+    prevKeys = obj.startIndex + obj.totalKeys - 1
   }
-  console.log('New Key Store: ', keyStore)
+  let blocks = getBlocks(keyList,  prevKeys)
+  // console.log(blocks)
+  keyStore = keyStore.concat(blocks)
+
+  // console.log('New Key Store: ', keyStore)
 
   // calculate merkel root for new key-store
   let newMerkelRoot = calculateMerkelRoot(keyStore)
@@ -72,6 +81,35 @@ async function addKeys(key_objects) {
   await updateNodeOperatorDetails(path, newMerkelRoot, newKeysCount)
 
   console.log('Add Complete')
+}
+
+function getBlocks(keyList, previousIndex) {
+
+  let blocks = []
+
+
+  let currentBlock = {
+    startIndex:previousIndex + 1,
+    totalKeys:0,
+    keyList: [],
+    pubKeysHex:'',
+    signatureHex:''
+  }
+
+  for (let i=0; i < keyList.length; i++ ) {
+    if (currentBlock.keyList.length >= MAX_BLOCK_SIZE){
+      blocks.push(currentBlock)
+      currentBlock = {startIndex:previousIndex + 1 + i, totalKeys:0, keyList: [], pubKeysHex:'', signatureHex:''}
+    }
+    currentBlock.totalKeys += 1
+    currentBlock.keyList.push(keyList[i])
+    currentBlock.pubKeysHex += keyList[i].pubKey
+    currentBlock.signatureHex += keyList[i].signature
+  }
+
+  blocks.push(currentBlock)
+  console.log("Blocks Created: ", blocks.length)
+  return blocks
 }
 
 async function getKeyStore() {

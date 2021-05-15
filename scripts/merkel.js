@@ -1,105 +1,46 @@
-const web3 = require('web3')
-const sha3 = web3.utils.soliditySha3
+const keccak256 = require('keccak256')
 
-class MerkleTree {
-  constructor() {
-    this.root = []
-    this.merkelRoot = null
-  }
+const { MerkleTree } = require('merkletreejs')
 
-  createTree(key_list) {
-    this.root.push(key_list.map(x => sha3(x)))
 
-    while (this.root[this.root.length - 1].length > 1) {
-      let temp = [];
 
-      for (let index = 0; index < this.root[this.root.length - 1].length; index += 2) {
-        if (index < this.root[this.root.length - 1].length - 1 && index % 2 === 0)
-          temp.push(sha3(this.root[this.root.length - 1][index] + this.root[this.root.length - 1][index + 1]));
-        else temp.push(this.root[this.root.length - 1][index]);
-      }
-      this.root.push(temp);
-    }
-    this.merkelRoot = this.root[this.root.length - 1][0]
-  }
+function calculateMerkelRoot(keyStore) {
+  let keyBlocks = formatKeyList(keyStore)
 
-  getVerificationParams(index) {
-    let proof = []
-    for (let i = 0; i < this.root.length; i++) {
-      const layer = this.root[i]
-      const isRightNode = index % 2
-      const pairIndex = (isRightNode ? index - 1: index + 1)
+  let leaves = keyBlocks.map(x => keccak256(x))
+  const tree = new MerkleTree(leaves, keccak256, { sort: true })
 
-      if (pairIndex < layer.length && isRightNode) {
-        proof.push(layer[pairIndex])
-      }
-      index = (index / 2) | 0
-    }
-    return proof
-  }
+  return tree.getHexRoot()
 
-  verify(keys, totalKeys, proof) {
-    let layerLength = totalKeys
-    let calc = []
-    let totalLength = 0
-    let proof_length = proof.length
-    while (layerLength > 1) {
-      calc = []
-      totalLength = keys.length
-      if (layerLength % 2){
-        calc.push(keys[totalLength - 1])
-        totalLength = totalLength - 1
-      }
-      if (totalLength % 2) {
-        keys.unshift(proof[proof_length - 1])
-        totalLength += 1
-        proof_length -= 1
-      }
-      while (totalLength > 0) {
-        calc.unshift(sha3(keys[totalLength - 2] + keys[totalLength - 1]))
-        totalLength = totalLength - 2
-      }
-      layerLength = (layerLength + 1)/2 | 0
-      keys = calc
-    }
-  }
 }
 
-function calculateMerkelRoot(key_list) {
-  const tree = new MerkleTree()
-  key_list = formatKeyList(key_list)
-  tree.createTree(key_list)
-  return tree.merkelRoot
+function verifyMerkelRoot(keyStore, root) {
+  let keyBlocks = formatKeyList(keyStore)
+
+  let leaves = keyBlocks.map(x => keccak256(x))
+  const tree = new MerkleTree(leaves, keccak256, { sort: true })
+  return tree.getHexRoot() === root;
 }
 
-function verifyMerkelRoot(key_list, root) {
-  const tree = new MerkleTree()
-  key_list = formatKeyList(key_list)
-  tree.createTree(key_list)
-  const new_root = tree.merkelRoot
-  if (new_root === root){
-    return true
-  } else {
-    return false
-  }
-}
+function formatKeyList(keyStore) {
+  let blockStrings = []
 
-function formatKeyList(key_list) {
-  let format = []
-
-  for (let i = 0; i < key_list.length; i++) {
-    let obj = key_list[i]
-    format.push(obj.pubkey + obj.signature)
+  for (let i = 0; i < keyStore.length; i++) {
+    let block = keyStore[i]
+    blockStrings.push(block.pubKeysHex + block.signatureHex)
   }
 
-  return format
+  return blockStrings
 }
 
-function getVerificationParams(key_list, usedKeys) {
-  const tree = new MerkleTree()
-  key_list = formatKeyList(key_list)
-  tree.createTree(key_list)
-  return tree.getVerificationParams(usedKeys)
+function getVerificationParams(keyStore, block) {
+
+  let keyBlocks = formatKeyList(keyStore)
+
+  let leaves = keyBlocks.map(x => keccak256(x))
+  const tree = new MerkleTree(leaves, keccak256, { sort: true })
+
+  return tree.getHexProof(keccak256(block))
 }
 
 
