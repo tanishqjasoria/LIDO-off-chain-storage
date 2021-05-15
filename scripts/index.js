@@ -2,12 +2,14 @@ const ipfsAPI = require('ipfs-http-client');
 const { globSource, create } = ipfsAPI
 const ipfs = create({host: 'ipfs.infura.io', port: '5001', protocol: 'https' })
 const BufferList = require('bufferlist').BufferList;
+const { calculateMerkelRoot, verifyMerkelRoot } = require('./merkel')
+const contract = artifacts.require("NodeOperatorsRegistry")
 
 module.exports = async function main(callback) {
   try {
-    await getKey()
+    await getKeyStore()
     await addKey('this', 'not')
-    await getKey()
+    await getKeyStore()
     callback(0);
   } catch (error) {
     console.error(error);
@@ -17,14 +19,20 @@ module.exports = async function main(callback) {
 
 async function addKey(pubkey, signature) {
 
-  console.log("Adding new keys!")
-  const contract = artifacts.require("NodeOperatorsRegistry")
+  let key_object = {
+    pubkey: pubkey,
+    signature: signature
+  }
+  console.log("Adding new keys!: ", JSON.stringify(key_object))
+
   const NodeOperatorsRegistry = await contract.deployed()
 
-  let ipfsHash = await NodeOperatorsRegistry.getIPFSHash()
+  let ret_obj = await NodeOperatorsRegistry.getIPFSHashMerkelRoot()
+  let ipfsHash = ret_obj['0']
+  let merkelRoot = ret_obj['1']
   console.log('Current IPFS Hash: ', ipfsHash.toString())
 
-  let keyStore = { pubKey:[], signature:[] }
+  let keyStore = []
 
   if (ipfsHash === '') {
     console.log('empty')
@@ -33,16 +41,25 @@ async function addKey(pubkey, signature) {
   }
   console.log('Current Key Store: ', keyStore)
 
-  keyStore.pubKey.push(pubkey)
-  keyStore.signature.push(signature)
+  let is_untampered = verifyMerkelRoot(keyStore, merkelRoot)
+  console.log('Verified : ', is_untampered)
+
+  if (is_untampered === false) {
+    console.log('Merkel Root Verification FAILED')
+    console.log('EXITING!')
+    return
+  }
+
+  keyStore.push(key_object)
   console.log('New Key Store: ', keyStore)
+  let newMerkelRoot = calculateMerkelRoot(keyStore)
 
   let { path } = await addToIPFS(JSON.stringify(keyStore))
   console.log("New IPFS Path:", path)
   const accounts = await web3.eth.getAccounts()
   console.log(accounts)
   try {
-    let result = await NodeOperatorsRegistry.addIPFSHash(path, {from: accounts[1]})
+    let result = await NodeOperatorsRegistry.addIPFSHashMerkelRoot(path, newMerkelRoot, {from: accounts[0]})
   } catch (error) {
     console.log('Contract call failed')
     return
@@ -50,22 +67,24 @@ async function addKey(pubkey, signature) {
   console.log('Add Complete')
 }
 
-async function getKey() {
+async function getKeyStore() {
 
   const contract = artifacts.require("NodeOperatorsRegistry")
   const NodeOperatorsRegistry = await contract.deployed()
 
-  let ipfsHash = await NodeOperatorsRegistry.getIPFSHash()
+  let ret_obj = await NodeOperatorsRegistry.getIPFSHashMerkelRoot()
+  let ipfsHash = ret_obj['0']
+  let merkelRoot = ret_obj['1']
   console.log('IPFS Path: ', ipfsHash.toString())
 
-  let keyStore = { pubKey:[], signature:[] }
+  let keyStore = []
 
   if (ipfsHash === '') {
     console.log('empty')
   } else {
     keyStore = await getKeyStoreIPFS(ipfsHash.toString())
   }
-  console.log('Key Store: ', keyStore)
+  console.log('Key Store: ', keyStore, merkelRoot)
 
 }
 

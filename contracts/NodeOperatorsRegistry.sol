@@ -24,6 +24,7 @@ contract NodeOperatorsRegistry {
     uint256 public approvedKeys;
     uint256 public usedKeys;
     string public ipfsHash;
+    string public merkelRoot;
 
     constructor(address _nodeOperator, address _governance) {
         nodeOperator = _nodeOperator;
@@ -34,8 +35,9 @@ contract NodeOperatorsRegistry {
         return keys.length;
     }
 
-    function getIPFSHash() public view returns (string memory) {
-        return ipfsHash;
+    function getIPFSHashMerkelRoot() public view returns (string memory, string memory) {
+        return (ipfsHash, merkelRoot);
+
     }
 
     function addKey(bytes memory _pubkey, bytes memory _signature) external onlyNodeOperator {
@@ -43,9 +45,10 @@ contract NodeOperatorsRegistry {
         keys.push(PubkeyAndSignature(_pubkey, _signature));
     }
 
-    function addIPFSHash(string memory _ipfsHash) external onlyNodeOperator {
+    function addIPFSHashMerkelRoot(string memory _ipfsHash, string memory _merkelRoot) external onlyNodeOperator {
         // add new pubkey and signature
         ipfsHash = _ipfsHash;
+        merkelRoot = _merkelRoot;
     }
 
     function approveKeys(uint256 newApprovedKeys) external onlyGovernance {
