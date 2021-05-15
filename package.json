@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "ganache-cli": "^6.12.2"
+  },
+  "dependencies": {
+    "bufferlist": "^0.1.0",
+    "ipfs-http-client": "^50.0.0"
+  }
+}
