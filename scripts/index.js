@@ -1,12 +1,8 @@
-const ipfsAPI = require('ipfs-http-client');
 // const web3 = require("web3");
-const { globSource, create } = ipfsAPI
-const ipfs = create({host: 'ipfs.infura.io', port: '5001', protocol: 'https' })
-const BufferList = require('bufferlist').BufferList;
 const { calculateMerkelRoot, verifyMerkelRoot } = require('./merkel')
 const contract = artifacts.require("NodeOperatorsRegistry")
+const { getFromIPFS, addToIPFS } = require('./ipfs')
 
-const LIMIT_KEY_IN_ONE_CONTRACT_CALL = 20
 
 module.exports = async function main(callback) {
   try {
@@ -59,18 +55,20 @@ async function addKeys(key_objects) {
   //   return
   // }
 
-
-  let j = 0
+  // Update key-store with new keys
   for (let i=0; i < key_objects.length; i++) {
     keyStore.push(key_objects[i])
   }
   console.log('New Key Store: ', keyStore)
+
+  // calculate merkel root for new key-store
   let newMerkelRoot = calculateMerkelRoot(keyStore)
 
+  // Add new key-store to IPFS
   let { path } = await addToIPFS(JSON.stringify(keyStore))
   console.log("New IPFS Path:", path)
 
-
+  // update contract with new IPFS hash and merkel root
   await updateNodeOperatorDetails(path, newMerkelRoot, newKeysCount)
 
   console.log('Add Complete')
@@ -103,20 +101,7 @@ async function getKeyStoreIPFS(ipfsHash) {
   return JSON.parse(content.toString())
 }
 
-const getFromIPFS = async hashToGet => {
-  for await (const file of ipfs.get(hashToGet)) {
-    if (!file.content) continue;
-    const content = new BufferList()
-    for await (const chunk of file.content) {
-      content.push(chunk)
-    }
-    return content
-  }
-}
 
-const addToIPFS = async keyStore => {
-  return await ipfs.add(keyStore)
-}
 
 async function getNodeOperatorDetails() {
   const NodeOperatorsRegistry = await contract.deployed()
