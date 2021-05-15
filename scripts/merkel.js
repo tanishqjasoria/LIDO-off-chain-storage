@@ -4,7 +4,7 @@ const sha3 = web3.utils.soliditySha3
 class MerkleTree {
   constructor() {
     this.root = []
-    this.merkelRoot = None
+    this.merkelRoot = null
   }
 
   createTree(key_list) {
@@ -35,7 +35,6 @@ class MerkleTree {
       }
       index = (index / 2) | 0
     }
-
     return proof
   }
 }
