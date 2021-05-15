@@ -24,17 +24,21 @@ async function assignNextKeys() {
 
   let keyStore = await getKeyStoreIPFS(ipfsHash.toString())
 
-  let proof = getVerificationParams(keyStore, 1)
-  let to_ret = ''
-  for (let i = 0; i < proof.length; i++) {
-    to_ret = to_ret + proof[i]
+  let block;
+  for (let i=0; i <= keyStore.length; i++){
+    if (keyStore[i].startIndex >= 200 + 1) {
+      block = keyStore[i]
+      break
+    }
   }
+
+  let proof = getVerificationParams(keyStore, block)
+
+  const NodeOperatorsRegistry = await contract.deployed()
+  console.log(await NodeOperatorsRegistry.a_verify(merkelRoot, proof, block.pubKeysHex, block.signatureHex ))
   console.log(proof)
   return proof
 }
-
-
-
 
 
 async function getKeyStoreIPFS(ipfsHash) {

@@ -60,7 +60,7 @@ async function addKeys(keyList) {
   console.log('Current Key Store: ', keyStore)
 
   let prevKeys = 0
-  if (keyStore) {
+  if (keyStore.length > 0) {
     let obj = keyStore[keyStore.length - 1]
     prevKeys = obj.startIndex + obj.totalKeys - 1
   }

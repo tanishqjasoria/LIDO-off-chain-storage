@@ -40,7 +40,7 @@ function getVerificationParams(keyStore, block) {
   let leaves = keyBlocks.map(x => keccak256(x))
   const tree = new MerkleTree(leaves, keccak256, { sort: true })
 
-  return tree.getHexProof(keccak256(block))
+  return tree.getHexProof(keccak256(block.pubKeysHex + block.signatureHex))
 }
 
 

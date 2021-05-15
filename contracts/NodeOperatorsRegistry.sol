@@ -38,6 +38,33 @@ contract NodeOperatorsRegistry {
         return keys.length;
     }
 
+    function verify(
+        bytes32 root,
+        bytes32 leaf,
+        bytes32[] memory proof
+    )
+    public
+    pure
+    returns (bool)
+    {
+        bytes32 computedHash = leaf;
+
+        for (uint256 i = 0; i < proof.length; i++) {
+            bytes32 proofElement = proof[i];
+
+            if (computedHash < proofElement) {
+                // Hash(current computed hash + current element of the proof)
+                computedHash = keccak256(abi.encodePacked(computedHash, proofElement));
+            } else {
+                // Hash(current element of the proof + current computed hash)
+                computedHash = keccak256(abi.encodePacked(proofElement, computedHash));
+            }
+        }
+
+        // Check if the computed hash (root) is equal to the provided root
+        return computedHash == root;
+    }
+
     function getOperatorDetails() public view returns (string memory, string memory, uint256) {
         return (ipfsHash, merkelRoot, usedKeys);
 
@@ -48,6 +75,12 @@ contract NodeOperatorsRegistry {
         ipfsHash = _ipfsHash;
         merkelRoot = _merkelRoot;
         totalKeysCount = totalKeysCount + _newKeysCount;
+    }
+
+    function a_verify(bytes32  root, bytes32[] memory proof, string memory _pubKeys, string memory signature) public view returns (bool)
+    {
+        bytes32 leaf = keccak256(abi.encodePacked(_pubKeys, signature));
+        return verify(root, leaf, proof);
     }
 
     function addKey(bytes memory _pubkey, bytes memory _signature) external onlyNodeOperator {
