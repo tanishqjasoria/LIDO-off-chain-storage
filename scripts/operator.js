@@ -1,5 +1,5 @@
 // const web3 = require("web3");
-const { calculateMerkelRoot, verifyMerkelRoot } = require('./merkel')
+const { calculateMerkelRoot, verifyMerkelRoot, getVerificationParams } = require('./merkel')
 const contract = artifacts.require("NodeOperatorsRegistry")
 const { getFromIPFS, addToIPFS } = require('./ipfs')
 

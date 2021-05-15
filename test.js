@@ -19,6 +19,7 @@ class MerkleTree {
         else temp.push(this.root[this.root.length - 1][index]);
       }
       this.root.push(temp);
+      console.log(this.root[this.root.length - 1])
     }
     this.merkelRoot = this.root[this.root.length - 1][0]
   }
@@ -65,42 +66,13 @@ class MerkleTree {
   }
 }
 
-function calculateMerkelRoot(key_list) {
-  const tree = new MerkleTree()
-  key_list = formatKeyList(key_list)
-  tree.createTree(key_list)
-  return tree.merkelRoot
-}
+let a = [1,2,3,4,5,6,7]
+let totalKeys = 7
+let index = 4
 
-function verifyMerkelRoot(key_list, root) {
-  const tree = new MerkleTree()
-  key_list = formatKeyList(key_list)
-  tree.createTree(key_list)
-  const new_root = tree.merkelRoot
-  if (new_root === root){
-    return true
-  } else {
-    return false
-  }
-}
+let tree = new MerkleTree()
+tree.createTree(a)
+let proof = tree.getVerificationParams(index)
+let keys = a.map(x=>sha3(x)).slice(index)
 
-function formatKeyList(key_list) {
-  let format = []
-
-  for (let i = 0; i < key_list.length; i++) {
-    let obj = key_list[i]
-    format.push(obj.pubkey + obj.signature)
-  }
-
-  return format
-}
-
-function getVerificationParams(key_list, usedKeys) {
-  const tree = new MerkleTree()
-  key_list = formatKeyList(key_list)
-  tree.createTree(key_list)
-  return tree.getVerificationParams(usedKeys)
-}
-
-
-module.exports = { calculateMerkelRoot, verifyMerkelRoot, getVerificationParams }
+tree.verify(keys, totalKeys, proof)

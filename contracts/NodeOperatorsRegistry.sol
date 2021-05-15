@@ -38,8 +38,8 @@ contract NodeOperatorsRegistry {
         return keys.length;
     }
 
-    function getOperatorDetails() public view returns (string memory, string memory) {
-        return (ipfsHash, merkelRoot);
+    function getOperatorDetails() public view returns (string memory, string memory, uint256) {
+        return (ipfsHash, merkelRoot, usedKeys);
 
     }
 
