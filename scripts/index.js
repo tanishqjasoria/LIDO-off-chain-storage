@@ -5,6 +5,8 @@ const BufferList = require('bufferlist').BufferList;
 const { calculateMerkelRoot, verifyMerkelRoot } = require('./merkel')
 const contract = artifacts.require("NodeOperatorsRegistry")
 
+const LIMIT_KEY_IN_ONE_CONTRACT_CALL = 20
+
 module.exports = async function main(callback) {
   try {
     await getKeyStore()
@@ -17,12 +19,12 @@ module.exports = async function main(callback) {
   }
 }
 
-async function addKey(pubkey, signature) {
+async function addKeys(key_objects) {
 
-  let key_object = {
-    pubkey: pubkey,
-    signature: signature
-  }
+  // let key_object = {
+  //   pubkey: pubkey,
+  //   signature: signature
+  // }
   console.log("Adding new keys!: ", JSON.stringify(key_object))
 
   const NodeOperatorsRegistry = await contract.deployed()
@@ -50,7 +52,14 @@ async function addKey(pubkey, signature) {
     return
   }
 
-  keyStore.push(key_object)
+  let unused_keys = [[]]
+  let j = 0
+  for (let i=0; i < key_objects.length; i++) {
+    keyStore.push(key_objects[i])
+    if (unused_keys[j].length < LIMIT_KEY_IN_ONE_CONTRACT_CALL) {
+      unused_keys[j].push(key_objects[i])
+    }
+  }
   console.log('New Key Store: ', keyStore)
   let newMerkelRoot = calculateMerkelRoot(keyStore)
 
