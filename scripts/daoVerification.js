@@ -1,8 +1,9 @@
 const { calculateMerkelRoot, verifyMerkelRoot, getVerificationParams } = require('./merkel')
-const contract = artifacts.require("NodeOperatorsRegistry")
 const { addToIPFS, getKeyStoreIPFS} = require('./ipfs')
-const { getNodeOperatorDetails, updateNodeOperatorDetails } = require('./contract')
+const { getNodeOperatorDetails, updateNodeOperatorDetails, approveKeys } = require('./contract')
 
+
+//[DAO Verification]: Main Function ------------------------------------------------------------------------------------
 module.exports = async function main(callback) {
   try {
 
@@ -16,6 +17,7 @@ module.exports = async function main(callback) {
 }
 
 
+//[DAO Verification]: Utility Functions --------------------------------------------------------------------------------
 async function verifyKeyStore() {
   let ret_obj = await getNodeOperatorDetails()
   let ipfsHash = ret_obj['0']
@@ -42,7 +44,9 @@ async function verifyKeyStore() {
 
   // Add additional checks for verification
   // If changes required - update the IPFS Hash and Merkle Root in the contract
+  const newTotalKeys = keyStore[keyStore.length -1][startIndex] + keyStore[keyStore.length -1][totalKeys] - 1
 
+  await approveKeys(ipfsHash, merkelRoot, newTotalKeys)
 }
 
 function checkDuplicates(keyStore) {

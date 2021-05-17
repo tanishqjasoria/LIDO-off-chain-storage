@@ -14,7 +14,7 @@ async function getNodeOperatorDetails() {
 }
 
 
-async function updateNodeOperatorDetails(ipfsHash, merkelRoot, newKeysCount) {
+async function updateNodeOperatorDetails( ipfsHash, merkelRoot, newKeysCount) {
 
   const NodeOperatorsRegistry = await contract.deployed()
   const accounts = await web3.eth.getAccounts()
@@ -28,4 +28,17 @@ async function updateNodeOperatorDetails(ipfsHash, merkelRoot, newKeysCount) {
 }
 
 
-module.exports = { getNodeOperatorDetails, updateNodeOperatorDetails }
+async function approveKeys( approvedIpfsHash, approvedMerkleRoot, approvedKeys) {
+
+  const NodeOperatorsRegistry = await contract.deployed()
+  const accounts = await web3.eth.getAccounts()
+
+  try {
+    let result = await NodeOperatorsRegistry.approveKeys(approvedIpfsHash, approvedMerkleRoot, approvedKeys)
+    console.log(result)
+  } catch (error) {
+    console.log('Contract call failed', error)
+  }
+}
+
+module.exports = { getNodeOperatorDetails, updateNodeOperatorDetails,approveKeys }

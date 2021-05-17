@@ -1,8 +1,9 @@
 const { calculateMerkelRoot, verifyMerkelRoot, getVerificationParams }= require('./merkel')
-const contract = artifacts.require("NodeOperatorsRegistry")
 const { getFromIPFS, addToIPFS, getKeyStoreIPFS } = require('./ipfs')
 const { getNodeOperatorDetails, updateNodeOperatorDetails } = require('./contract')
 
+
+//[Deposit Buffer ETH]: Main Function ----------------------------------------------------------------------------------
 module.exports = async function main(callback) {
   try {
 
@@ -16,6 +17,7 @@ module.exports = async function main(callback) {
 }
 
 
+//[Deposit Buffer ETH]: Utility Functions ------------------------------------------------------------------------------
 async function assignNextKeys() {
 
   let ret_obj = await getNodeOperatorDetails()
@@ -36,7 +38,7 @@ async function assignNextKeys() {
   let proof = getVerificationParams(keyStore, block)
 
   const NodeOperatorsRegistry = await contract.deployed()
-  console.log(await NodeOperatorsRegistry.verify(merkelRoot, proof, block.pubKeysHex , block.signatureHex ))
+  console.log(await NodeOperatorsRegistry.verify(proof, block.pubKeysHex , block.signatureHex ))
   console.log(proof)
   return proof
 }

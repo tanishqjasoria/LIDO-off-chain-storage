@@ -5,7 +5,10 @@
     "migrate": "truffle migrate",
     "console": "truffle console",
     "ganache":  "npx ganache-cli --deterministic",
-    "develop": "npm run migrate & npm run console"
+    "develop": "npm run migrate & npm run console",
+    "node_operator":  "npx truffle exec --network development ./scripts/nodeOperator.js",
+    "dao_verification":  "npx truffle exec --network development ./scripts/daoVerification.js",
+    "deposit_ether":  "npx truffle exec --network development ./scripts/depositBufferEth.js"
   },
   "devDependencies": {
     "ganache-cli": "^6.12.2"

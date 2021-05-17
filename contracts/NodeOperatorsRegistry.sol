@@ -17,19 +17,13 @@ contract NodeOperatorsRegistry {
         _;
     }
 
-    struct PubkeyAndSignature {
-        bytes pubkey;
-        bytes signature;
-    }
-
-    PubkeyAndSignature[] public keys;
-
     uint256 public approvedKeys;
     uint256 public usedKeys;
-    // adding here for after keys not stored in contract
     uint256 public totalKeysCount;
-    string public ipfsHash;
-    string public merkelRoot;
+    bytes32 public ipfsHash;
+    bytes32 public merkelRoot;
+    bytes32 public approvedIpfsHash;
+    bytes32 public approvedMerkelRoot;
 
     constructor (address _nodeOperator, address _governance) public {
         nodeOperator = _nodeOperator;
@@ -37,41 +31,38 @@ contract NodeOperatorsRegistry {
         totalKeysCount = 0;
     }
 
-    function totalKeys() public view returns (uint256) {
-        return keys.length;
-    }
 
-    function getOperatorDetails() public view returns (string memory, string memory, uint256) {
+    function getOperatorDetails() public view returns (bytes32, bytes32, uint256) {
         return (ipfsHash, merkelRoot, usedKeys);
 
     }
 
-    function updateOperatorDetails(string memory _ipfsHash, string memory _merkelRoot, uint256 _newKeysCount) external onlyNodeOperator {
+    function updateOperatorDetails(bytes32 _ipfsHash, bytes32 _merkelRoot, uint256 _newKeysCount) external onlyNodeOperator {
         // add new pubkey and signature
         ipfsHash = _ipfsHash;
         merkelRoot = _merkelRoot;
         totalKeysCount = totalKeysCount + _newKeysCount;
     }
 
-    function verify(bytes32  root, bytes32[] memory proof, string memory _pubKeys, string memory signature) public pure returns (bool)
+    function verify(bytes32[] memory proof, string memory pubKeys, string memory signature) public returns (bool)
     {
-        bytes32 leaf = keccak256(abi.encodePacked(_pubKeys, signature));
-        return MerkleProof.verify(proof, root, leaf);
+        bytes32 leaf = keccak256(abi.encodePacked(pubKeys, signature));
+        return MerkleProof.verify(proof, approvedMerkelRoot, leaf);
     }
 
-    function addKey(bytes memory _pubkey, bytes memory _signature) external onlyNodeOperator {
-        // add new pubkey and signature
-        keys.push(PubkeyAndSignature(_pubkey, _signature));
-    }
 
-    function approveKeys(uint256 newApprovedKeys) external onlyGovernance {
+    function approveKeys(bytes32 _ipfsHash, bytes32 _merkelRoot, uint256 newApprovedKeys) external onlyGovernance {
         approvedKeys = newApprovedKeys;
+        approvedIpfsHash = _ipfsHash;
+        approvedIpfsHash = _merkelRoot;
     }
 
-    function depositBufferedEther() external {
+    function depositBufferedEther(bytes32[] memory proof, string memory pubKeys, string memory signature, uint256 keyCount) external {
         // all checks
         // _stake(pubkey, signature);
-        usedKeys = usedKeys + 1;
+        require(verify(proof, pubKeys, signature));
+        require(usedKeys + keyCount <= approvedKeys);
+        usedKeys = usedKeys + keyCount;
     }
 
 //    function _stake(bytes memory _pubkey, bytes memory _signature) internal {
