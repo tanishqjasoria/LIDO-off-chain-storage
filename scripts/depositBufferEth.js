@@ -1,6 +1,7 @@
 const { calculateMerkelRoot, verifyMerkelRoot, getVerificationParams }= require('./merkel')
 const contract = artifacts.require("NodeOperatorsRegistry")
-const { getFromIPFS, addToIPFS } = require('./ipfs')
+const { getFromIPFS, addToIPFS, getKeyStoreIPFS } = require('./ipfs')
+const { getNodeOperatorDetails, updateNodeOperatorDetails } = require('./contract')
 
 module.exports = async function main(callback) {
   try {
@@ -38,28 +39,4 @@ async function assignNextKeys() {
   console.log(await NodeOperatorsRegistry.verify(merkelRoot, proof, block.pubKeysHex , block.signatureHex ))
   console.log(proof)
   return proof
-}
-
-
-async function getKeyStoreIPFS(ipfsHash) {
-  const content = await getFromIPFS(ipfsHash)
-  return JSON.parse(content.toString())
-}
-
-async function getNodeOperatorDetails() {
-  const NodeOperatorsRegistry = await contract.deployed()
-
-  return await NodeOperatorsRegistry.getOperatorDetails()
-}
-
-async function updateNodeOperatorDetails(ipfsHash, merkelRoot, newKeysCount) {
-  // TODO: update this function to connect metamask on frontend and use that to submit transaction to ethereum
-  const NodeOperatorsRegistry = await contract.deployed()
-  const accounts = await web3.eth.getAccounts()
-  try {
-    let result = await NodeOperatorsRegistry.updateOperatorDetails(
-      ipfsHash, merkelRoot, newKeysCount, {from: accounts[0]})
-  } catch (error) {
-    console.log('Contract call failed', error)
-  }
 }
