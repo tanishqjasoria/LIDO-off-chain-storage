@@ -3,7 +3,7 @@
     "ganache-cli": "^6.12.2"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.1.0",
+    "@openzeppelin/contracts": "^3.4.0",
     "bufferlist": "^0.1.0",
     "ipfs-http-client": "^50.0.0",
     "keccak256": "^1.0.2",

@@ -35,7 +35,7 @@ async function assignNextKeys() {
   let proof = getVerificationParams(keyStore, block)
 
   const NodeOperatorsRegistry = await contract.deployed()
-  console.log(await NodeOperatorsRegistry.a_verify(merkelRoot, proof, block.pubKeysHex, block.signatureHex ))
+  console.log(await NodeOperatorsRegistry.verify(merkelRoot, proof, block.pubKeysHex , block.signatureHex ))
   console.log(proof)
   return proof
 }
