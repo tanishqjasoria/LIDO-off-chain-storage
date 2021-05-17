@@ -1,4 +1,12 @@
 {
+  "name": "lido-off-chain-storage",
+  "scripts": {
+    "compile": "truffle compile",
+    "migrate": "truffle migrate",
+    "console": "truffle console",
+    "ganache":  "npx ganache-cli --deterministic",
+    "develop": "npm run migrate & npm run console"
+  },
   "devDependencies": {
     "ganache-cli": "^6.12.2"
   },
