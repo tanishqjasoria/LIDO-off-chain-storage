@@ -1,12 +1,13 @@
 const { calculateMerkelRoot, verifyMerkelRoot, getVerificationParams } = require('./merkel')
 const { addToIPFS, getKeyStoreIPFS} = require('./ipfs')
 const { getNodeOperatorDetails, updateNodeOperatorDetails, approveKeys } = require('./contract')
-
+const contract = artifacts.require("NodeOperatorsRegistry")
+const LOG_STRING = '[DAO Verification]: '
 
 //[DAO Verification]: Main Function ------------------------------------------------------------------------------------
 module.exports = async function main(callback) {
   try {
-
+    console.log(LOG_STRING, 'Starting...')
     await verifyKeyStore()
     callback(0);
 
@@ -19,34 +20,39 @@ module.exports = async function main(callback) {
 
 //[DAO Verification]: Utility Functions --------------------------------------------------------------------------------
 async function verifyKeyStore() {
-  let ret_obj = await getNodeOperatorDetails()
-  let ipfsHash = ret_obj['0']
-  let merkelRoot = ret_obj['1']
-  let usedKeys = ret_obj['2']
+
+  let { ipfsHash, merkelRoot, usedKeys } = await getNodeOperatorDetails(contract)
 
   let keyStore = await getKeyStoreIPFS(ipfsHash.toString())
+  console.log(LOG_STRING, 'Key Store Length - ', keyStore.length)
+  console.log(LOG_STRING, 'Used Keys - ', usedKeys)
+  console.log(LOG_STRING, 'Total Keys - ', keyStore[keyStore.length - 1].startIndex + keyStore[keyStore.length - 1].totalKeys - 1)
 
-  // Verify the merkle root
+
   if (verifyMerkelRoot(keyStore, merkelRoot)) {
-    console.log("Merkel Verification Passed")
+    console.log(LOG_STRING, "Merkel Verification Passed")
   } else {
-    throw new Error('Merkle Verification Failed')
+    throw new Error(LOG_STRING + 'Merkle Verification Failed')
   }
 
-  // Check of duplicates
+
   if (checkDuplicates(keyStore)) {
-    console.log("No Duplicates Found")
+    console.log(LOG_STRING, "No Duplicates Found")
   } else {
-    throw new Error('Duplicate Keys Found')
+    throw new Error(LOG_STRING + 'Duplicate Keys Found')
   }
 
   // TODO: check for correct credentials
 
   // Add additional checks for verification
   // If changes required - update the IPFS Hash and Merkle Root in the contract
-  const newTotalKeys = keyStore[keyStore.length -1][startIndex] + keyStore[keyStore.length -1][totalKeys] - 1
+  const newTotalKeys = keyStore[keyStore.length -1]["startIndex"] + keyStore[keyStore.length -1]["totalKeys"] - 1
+  console.log(LOG_STRING, 'Approving Keys...')
+  console.log(LOG_STRING, 'New keys approving - ', newTotalKeys)
+  console.log(LOG_STRING, 'IPHS Hash - ', ipfsHash)
+  console.log(LOG_STRING, 'Merkle Root - ', merkelRoot)
 
-  await approveKeys(ipfsHash, merkelRoot, newTotalKeys)
+  await approveKeys(contract, ipfsHash, merkelRoot, newTotalKeys)
 }
 
 function checkDuplicates(keyStore) {
@@ -54,9 +60,7 @@ function checkDuplicates(keyStore) {
   let keySet = new Set()
   for (let i=0; i < keyStore.length; i++) {
     let block = keyStore[i]
-    console.log(block)
     for (let j=0; j < block.keyList.length; j++) {
-      console.log(block.keyList[j].pubKey)
       if ( keySet.has(block.keyList[j].pubKey) ) {
         return false
       } else {

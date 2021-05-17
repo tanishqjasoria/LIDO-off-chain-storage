@@ -20,9 +20,9 @@ contract NodeOperatorsRegistry {
     uint256 public approvedKeys;
     uint256 public usedKeys;
     uint256 public totalKeysCount;
-    bytes32 public ipfsHash;
+    string public ipfsHash;
     bytes32 public merkelRoot;
-    bytes32 public approvedIpfsHash;
+    string public approvedIpfsHash;
     bytes32 public approvedMerkelRoot;
 
     constructor (address _nodeOperator, address _governance) public {
@@ -32,12 +32,12 @@ contract NodeOperatorsRegistry {
     }
 
 
-    function getOperatorDetails() public view returns (bytes32, bytes32, uint256) {
+    function getOperatorDetails() public view returns (string memory, bytes32, uint256) {
         return (ipfsHash, merkelRoot, usedKeys);
 
     }
 
-    function updateOperatorDetails(bytes32 _ipfsHash, bytes32 _merkelRoot, uint256 _newKeysCount) external onlyNodeOperator {
+    function updateOperatorDetails(string memory _ipfsHash, bytes32 _merkelRoot, uint256 _newKeysCount) external onlyNodeOperator {
         // add new pubkey and signature
         ipfsHash = _ipfsHash;
         merkelRoot = _merkelRoot;
@@ -51,10 +51,10 @@ contract NodeOperatorsRegistry {
     }
 
 
-    function approveKeys(bytes32 _ipfsHash, bytes32 _merkelRoot, uint256 newApprovedKeys) external onlyGovernance {
+    function approveKeys(string memory _ipfsHash, bytes32 _merkelRoot, uint256 newApprovedKeys) external onlyGovernance {
         approvedKeys = newApprovedKeys;
         approvedIpfsHash = _ipfsHash;
-        approvedIpfsHash = _merkelRoot;
+        approvedMerkelRoot = _merkelRoot;
     }
 
     function depositBufferedEther(bytes32[] memory proof, string memory pubKeys, string memory signature, uint256 keyCount) external {

@@ -1,6 +1,8 @@
 const { calculateMerkelRoot, verifyMerkelRoot, getVerificationParams } = require('./merkel')
 const { getNodeOperatorDetails, updateNodeOperatorDetails } = require('./contract')
 const { getFromIPFS, addToIPFS, getKeyStoreIPFS } = require('./ipfs')
+const contract = artifacts.require("NodeOperatorsRegistry")
+const crypto = require('crypto')
 
 const DEPOSIT_DATA_PATH = '../deposit_data-1621224704.json'
 const depositData = require(DEPOSIT_DATA_PATH)
@@ -8,11 +10,12 @@ const depositData = require(DEPOSIT_DATA_PATH)
 const MAX_BLOCK_SIZE = 100
 const PUBKEY_LENGTH = 48
 const SIGNATURE_LENGTH = 48
-
+const LOG_STRING = '[Node Operator]: '
 
 //[Node Operator]: Main Function----------------------------------------------------------------------------------------
 module.exports = async function main(callback) {
   try {
+    console.log(LOG_STRING, 'Starting...')
     await printKeyStore()
 
     let keyList = getRandomKeys(200)
@@ -21,7 +24,7 @@ module.exports = async function main(callback) {
 
     callback(0);
   } catch (error) {
-    console.error(error);
+    console.error(LOG_STRING, error);
     callback(1);
   }
 }
@@ -30,36 +33,42 @@ module.exports = async function main(callback) {
 //[Node Operator]: Utility Functions------------------------------------------------------------------------------------
 async function addKeys(keyList) {
 
-  console.log("Adding new keys!: ", JSON.stringify(keyList))
+  console.log("Adding new keys - Length: ", keyList.length)
   const newKeysCount = keyList.length
 
-  let { ipfsHash, merkelRoot } = await getNodeOperatorDetails()
-  console.log('Current IPFS Hash: ', ipfsHash.toString())
-  console.log('Current Merkle Root: ', merkelRoot.toString())
+  let { ipfsHash, merkelRoot } = await getNodeOperatorDetails(contract)
 
   let keyStore;
   if (ipfsHash === '') {
-    console.log('No keystore initialized for the operator!  Using empty keystore')
+    console.log(LOG_STRING, 'Nothing stored in IPFS, using empty keystore')
     keyStore = []
   } else {
     keyStore = await getKeyStoreIPFS(ipfsHash.toString())
   }
 
-  let prevKeys;
+  console.log(LOG_STRING, 'Key Store Length - ', keyStore.length)
+  console.log(LOG_STRING, 'Merkle Root - ', merkelRoot)
+
+  let prevKeys = 0;
   if (keyStore.length > 0) {
     let obj = keyStore[keyStore.length - 1]
     prevKeys = obj.startIndex + obj.totalKeys - 1
   }
+  console.log(LOG_STRING, 'Previous stored keys - ', prevKeys)
 
+  console.log(LOG_STRING, 'Creating new key blocks...')
   let blocks = getBlocks(keyList,  prevKeys)
   keyStore = keyStore.concat(blocks)
 
   let newMerkelRoot = calculateMerkelRoot(keyStore)
-  let { path } = await addToIPFS(JSON.stringify(keyStore))
-  console.log("New IPFS Path:", path)
+  console.log(LOG_STRING, 'New Key Store Length - ', keyStore.length)
+  console.log(LOG_STRING, 'New Merkle Root - ', newMerkelRoot)
 
-  await updateNodeOperatorDetails(path, newMerkelRoot, newKeysCount)
-  console.log('Task Complete')
+  let { path } = await addToIPFS(JSON.stringify(keyStore))
+  console.log(LOG_STRING, "New IPFS Path:", path)
+
+  await updateNodeOperatorDetails(contract, path, newMerkelRoot, newKeysCount)
+  console.log(LOG_STRING, 'Task Complete')
 }
 
 function getBlocks(keyList, previousIndex) {
@@ -86,24 +95,25 @@ function getBlocks(keyList, previousIndex) {
   }
 
   blocks.push(currentBlock)
-  console.log("Blocks Created: ", blocks.length)
+  console.log(LOG_STRING, "Blocks Created: ", blocks.length)
   return blocks
 }
 
 async function printKeyStore() {
 
-  let { ipfsHash, merkelRoot } = await getNodeOperatorDetails()
-  console.log('Current IPFS Hash: ', ipfsHash.toString())
-  console.log('Current Merkle Root: ', merkelRoot.toString())
+  let { ipfsHash, merkelRoot } = await getNodeOperatorDetails(contract)
+  console.log(LOG_STRING, 'Current IPFS Hash: ', ipfsHash.toString())
+  console.log(LOG_STRING, 'Current Merkle Root: ', merkelRoot.toString())
 
   let keyStore = []
 
   if (ipfsHash === '') {
-    console.log('empty')
+    console.log(LOG_STRING, 'Nothing stored in IPFS, using empty keystore')
   } else {
     keyStore = await getKeyStoreIPFS(ipfsHash.toString())
   }
-  console.log('Key Store: ', keyStore, merkelRoot)
+  console.log(LOG_STRING, 'Key Store Length - ', keyStore.length)
+  console.log(LOG_STRING, 'Merkle Root - ', merkelRoot)
 
 }
 
