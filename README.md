@@ -75,3 +75,47 @@ It can also be modified to allow user to submit multiple blocks of keys in a sin
 merkle proof for each block separately and submit the array with [proof, block.pubKeysHex, block.signatureHex, 
 block.totalKeys] for each block. In PoC the user is only allowed to submit a single block at a time.
 
+
+### Demo
+
+All the important scripts are in the directory ```scripts/```. The important scripts for valid happy paths are:
+
+1. ```scripts/nodeOperator.js```: To mock behaviour of node operator. This script:
+   - print stored ipfsHash and merkleRoot on the contract.
+   - generate 200 unique pairs of key-signature and upload them to IPFS. This behaviour can be modified by uncommenting 
+     ```let keyList = getGeneratedKeys()``` at ```line 22```. Now it will read keys from ```deposit_data-1621224704.json```
+     generated using instruction in ```node-operator-manual.md```
+   - calculate the merkle root and then update ipfsHash and merkleRoot in the contract
+   
+2. ```scripts/daoVerification.js```: To mock behaviour of DAO for verification. This script:
+   - fetch keyStore from IPFS using the ipfsHash
+   - verify the keystore against merkleRoot
+   - check of duplicates
+   - if everything is verified, updates the approvedIpfsHash, approvedMerkleRoot and newApprovedKeys
+
+3. ```scripts/depositBufferEth.js```: To mock behaviour of a stranger (making the depositBufferEth call to contract). This script:
+   - fetch keyStore from IPFS using the approvedIpfsHash
+   - finds the block of keys to be used to deeposit ether
+   - generated proof for that block
+   - call depositBufferEther with arguments[proof, block.pubKeysHex, block.signatureHex, block.totalKeys]
+   
+```scripts/nodeOperatorDup.js``` and ```scripts/depositEthInvalid.js``` are used to mock the situations where the tasks
+are not performed correctly by the designated entity.
+
+For testing on local machine
+ - ```npm install```: to install all the dependencies.
+ - ```npm run ganache```: to launch a local instance of blockchain.
+ - ```npm run migrate```: to deploy the NodeOperatorRegistry contract.
+ - ```npm run node_operator```: mock node operator behaviour using ```scripts/nodeOperator.js```
+ - ```npm run dao_verification```: mock DAO verification using ```scripts/daoVerification.js```
+ - ```npm run deposit_ether```: mock behaviour of a stranger (making the depositBufferEth call to contract) using ```scripts/depositBufferEth.js```
+
+
+Some combination of behaviours can be directly tested by the shell scripts provided in the root directory. Start local
+blockchain instance using ```npm run ganache``` before using the scripts.
+
+- ```validHappyPath.sh```: every entity performs the required behaviour correctly.
+- ```invalidHappyPathDupKeys.sh```: node operator adds duplicate keys, which result in failed verification, thus failed
+deposit ether call.
+- ```invalidHappyPathNotApproved.sh```: deposit ether is called before being approved by the DAO, contract call fails
+- ```invalidHappyPathInvalidProof.sh```: when deposit ether is called using invalid public keys, contract call fails
