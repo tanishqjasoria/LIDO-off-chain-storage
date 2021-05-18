@@ -46,11 +46,10 @@ async function assignNextKeys() {
 
   console.log(LOG_STRING, 'New Keys being used for deposit - ', block.totalKeys)
   try{
-    await depositBufferEther(contract, proof, block.pubKeysHex, block.signatureHex, block.totalKeys)
+    await depositBufferEther(contract, proof, block.pubKeysHex + 'INVALID', block.signatureHex, block.totalKeys)
     console.log(LOG_STRING, 'Deposit Buffer Ether contract call SUCCESS')
   } catch (error) {
     console.log(LOG_STRING, 'contract call FAILED')
   }
-
 
 }

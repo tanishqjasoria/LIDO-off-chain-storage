@@ -46,12 +46,7 @@ async function depositBufferEther(contract, proof, pubKeys, signature, keyCount)
   const NodeOperatorsRegistry = await contract.deployed()
   const accounts = await web3.eth.getAccounts()
 
-  try {
-    let result = await NodeOperatorsRegistry.depositBufferedEther(proof, pubKeys, signature, keyCount, {from: accounts[1]})
-    // console.log(result)
-  } catch (error) {
-    console.log('Contract call failed', error)
-  }
+  let result = await NodeOperatorsRegistry.depositBufferedEther(proof, pubKeys, signature, keyCount, {from: accounts[1]})
 }
 
 module.exports = { getNodeOperatorDetails, updateNodeOperatorDetails, approveKeys, depositBufferEther }

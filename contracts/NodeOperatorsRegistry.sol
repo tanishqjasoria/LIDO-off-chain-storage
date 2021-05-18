@@ -44,7 +44,7 @@ contract NodeOperatorsRegistry {
         totalKeysCount = totalKeysCount + _newKeysCount;
     }
 
-    function verify(bytes32[] memory proof, string memory pubKeys, string memory signature) public returns (bool)
+    function verify(bytes32[] memory proof, string memory pubKeys, string memory signature) public view returns (bool)
     {
         bytes32 leaf = keccak256(abi.encodePacked(pubKeys, signature));
         return MerkleProof.verify(proof, approvedMerkelRoot, leaf);

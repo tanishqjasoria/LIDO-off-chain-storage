@@ -7,8 +7,10 @@
     "ganache": "npx ganache-cli --deterministic",
     "develop": "npm run migrate & npm run console",
     "node_operator": "npx truffle exec --network development ./scripts/nodeOperator.js",
+    "node_operator_duplicate": "npx truffle exec --network development ./scripts/nodeOperatorDup.js",
     "dao_verification": "npx truffle exec --network development ./scripts/daoVerification.js",
-    "deposit_ether": "npx truffle exec --network development ./scripts/depositBufferEth.js"
+    "deposit_ether": "npx truffle exec --network development ./scripts/depositBufferEth.js",
+    "deposit_ether_invalid": "npx truffle exec --network development ./scripts/depositEthInvalid.js"
   },
   "devDependencies": {
     "ganache-cli": "^6.12.2"
